@@ -1,0 +1,14 @@
+name: Deployment
+on:
+  push:
+    branches:
+      - main
+jobs:
+  Deploy-to-VPS:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build image
+        run: docker build -t nginx-restaurant-frontend .
+      - name: Exec container
+        run: docker run --name restaurant-frontend -e VIRTUAL_HOST=restaurant.isaias-tech.com -e LETSENCRYPT_HOST=restaurant.isaias-tech.com -e VIRTUAL_PORT=8002 -p "8002:80" --restart always --network server -d nginx-restaurant-frontend
