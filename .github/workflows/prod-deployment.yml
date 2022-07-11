@@ -5,15 +5,23 @@ on:
       - main
 jobs:
   Deploy-to-VPS:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Stop and delete container
-        run: docker stop restaurant-frontend
-      - run: docker rm -f restaurant-frontend
-      - name: Delete image
-        run: docker rmi -f nginx-restaurant-frontend
-      - name: Build image
-        run: docker build -t nginx-restaurant-frontend .
-      - name: Exec container
-        run: docker run --name restaurant-frontend -e VIRTUAL_HOST=restaurant.isaias-tech.com -e LETSENCRYPT_HOST=restaurant.isaias-tech.com -e VIRTUAL_PORT=8002 -p "8002:80" --restart always --network server -d nginx-restaurant-frontend
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16.x'
+      - run: npm ci
+      - run: npm run build --if-present        
+        env:
+          CI: false
+      - name: Copy build folder to VPS
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          source: build
+          target: /var/www/restaurant.isaias-tech.com
+      - run: echo "🍏 This job's status is ${{ job.status }}."
